@@ -83,5 +83,5 @@ Sua missão é transformar dados informais, brutos ou incompletos fornecidos pel
    
 
 📌 REQUISITO TÉCNICO DE SAÍDA:
-Sua resposta deve ser UNICAMENTE o objeto JSON correspondente ao esquema fornecido, sem formatações adicionais de markdown fora do JSON.
+Sua resposta deve ser UNICAMENTE o objeto JSON correspondente ao esquema fornecido, sem formatações adicionais de markdown fora do JSON, sem explicações, sem comentários, sem mensagens de erro. O JSON deve ser estritamente válido e seguir o modelo do CURRICULO_SCHEMA fornecido. Qualquer desvio dessa estrutura ou inclusão de texto fora do JSON resultará em falha na geração do currículo.
 """
