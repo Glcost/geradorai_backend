@@ -8,7 +8,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 # Importando o que criamos no outro arquivo:
-from config import RECEITA_SCHEMA, SYSTEM_INSTRUCTION
+from config import CURRICULO_SCHEMA, SYSTEM_INSTRUCTION
 
 # Carrega as variáveis de ambiente e inicia o Gemini
 load_dotenv()
@@ -21,10 +21,25 @@ CORS(app)
 
 # app.py (Parte 2)
 
-def generate_recipe(ingredientes):
-    # Junta os ingredientes enviados em uma única linha de texto
-    lista_ingredientes = ", ".join(ingredientes)
-    conteudo_prompt = f"Crie uma receita utilizando obrigatoriamente estes ingredientes: {lista_ingredientes}."
+def generate_curriculo_ia(dados_usuario):
+    
+    contato_dados = dados_usuario.get('contato', {})
+    email = contato_dados.get('email', '')
+    telefone = contato_dados.get('telefone', '')
+    
+    
+    
+    
+    conteudo_prompt = f"""Gere um currículo profissional e polido com base nos seguintes dados brutos fornecidos pelo usuário:
+    
+    - Nome Completo: {dados_usuario.get('nome_completo')}
+    - Cargo Pretendido: {dados_usuario.get('cargo_pretendido')}
+    - Localização: {dados_usuario.get('localizacao')}
+    - E-mail: {email}
+    - Telefone: {telefone}
+    - Tecnologias/Competências: {dados_usuario.get('tecnologias')}
+    - Escolaridade/Cursos: {dados_usuario.get('escolaridade')}
+    - Projetos ou Experiências contadas pelo usuário: {dados_usuario.get('texto_experiencias')}"""
     
     # Faz a chamada para o modelo pedindo uma resposta estruturada em JSON
     response = client.models.generate_content(
@@ -33,7 +48,7 @@ def generate_recipe(ingredientes):
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,
             response_mime_type="application/json", # Força a saída em formato JSON
-            response_schema=RECEITA_SCHEMA,       # Segue o esquema do config.py
+            response_schema=CURRICULO_SCHEMA,       # Segue o esquema do config.py
         )
     )
     return response.text
@@ -46,7 +61,7 @@ def generate_recipe(ingredientes):
 def root():
     return jsonify({
         "status": "success",
-        "message": "API Gerador de Receitas funcionando!",
+        "message": "API Gerador de Curriculo funcionando!",
         "version": "1.0"
     }), 200
 
@@ -54,41 +69,38 @@ def root():
 def generate():
     data = request.get_json()
     
-    # Validação 1: O JSON foi enviado?
-    if not data or "ingredientes" not in data:
+   # Validação: Garante que os campos cruciais foram enviados
+    campos_obrigatorios = ["nome_completo", "cargo_pretendido", "texto_experiencias"]
+    if not data:
         return jsonify({
             "status": "error",
-            "message": "Por favor, envie uma lista de ingredientes no formato JSON."
+            "message": "Requisição inválida. Envie os dados do formulário."
         }), 400
         
-    ingredientes = data.get("ingredientes", [])
-    
-    # Validação 2: É uma lista e possui no mínimo 3 itens?
-    if not isinstance(ingredientes, list) or len(ingredientes) < 3:
-        return jsonify({
-            "status": "error",
-            "message": "Você precisa fornecer no mínimo 3 ingredientes."
-        }), 400
+    for campo in campos_obrigatorios:
+        if not data.get(campo):
+            return jsonify({
+                "status": "error",
+                "message": f"O campo '{campo}' é obrigatório para gerar o currículo."
+            }), 400
     
     try:
-        # Pede para o Gemini gerar a receita (retorna como string JSON)
-        receita_json_string = generate_recipe(ingredientes)
+        # Chama a função passando o dicionário completo de dados
+        curriculo_json_string = generate_curriculo_ia(data)
         
-        # Converte a string JSON em Dicionário Python para o Flask organizar a resposta
-        receita_estruturada = json.loads(receita_json_string)
+        # Converte a resposta em objeto Python
+        curriculo_estruturado = json.loads(curriculo_json_string)
         
         return jsonify({
             "status": "success",
-            "ingredientes_enviados": ingredientes,
-            "dados_receita": receita_estruturada
+            "dados_curriculo": curriculo_estruturado
         }), 200
         
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Erro ao gerar a receita: {str(e)}"
+            "message": f"Erro ao otimizar o currículo com IA: {str(e)}"
         }), 500
 
-# Executa o servidor local
 if __name__ == "__main__":
     app.run(debug=True)
